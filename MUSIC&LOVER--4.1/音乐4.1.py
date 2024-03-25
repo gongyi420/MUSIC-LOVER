@@ -9,6 +9,9 @@ from tqdm import tqdm
 import os
 import re
 from colorama import Fore, init, Style
+from urllib.parse import urlparse, parse_qs
+import cloudmusic
+
 init()
 kuwo_headers = {
     'Cookie': '_ga=GA1.2.1814122629.1651482273; _gid=GA1.2.205632186.1660292719; Hm_lvt_cdb524f42f0ce19b169a8071123a4797=1660292719,1660351648; Hm_lpvt_cdb524f42f0ce19b169a8071123a4797=1660374742; kw_token=2CX2HIT8EYG',
@@ -31,6 +34,7 @@ print(Fore.CYAN + notice)
 print(Fore.RESET + "--------------MUSIC LOVER目录-----------------")
 print("1、音乐名称搜索下载       2、歌手音乐批量下载 ")
 print("3、网易云音乐单曲下载     4、网易云榜单批量下载")
+print("5、网易云音乐歌单批量下载")
 print("---------------------------------------------")
 user = input("请输入功能的索引:")
 
@@ -178,8 +182,10 @@ def music163_download():
 
 
 def music_163_batchsize():
-    print(Fore.MAGENTA + '小tips:输入网址时请去掉“#/”,否则可能导致网址解析失败导致无法下载')
+
+    # print(Fore.MAGENTA + '小tips:输入网址时请去掉“#/”,否则可能导致网址解析失败导致无法下载')
     user_list_url = input(Fore.RESET + "请输入需要下载的歌单网址:")
+    user_list_url = user_list_url.replace("#/", "")
 
     user_file = input('请输入榜单名称:')
     os.makedirs(user_file, exist_ok=True)
@@ -216,6 +222,28 @@ def music_163_batchsize():
             time.sleep(2)
     print(Fore.GREEN + f"{user_file}全部下载完成")
 
+def music_163_playlist():
+    user_list_url = input(Fore.RESET + "请输入需要下载的歌单网址:")
+    parsed_url = urlparse(user_list_url)
+    query_params = parse_qs(parsed_url.query)
+    playlist_id = query_params["id"][0]
+
+    folder_name = input('请输入歌单名称:')
+    os.makedirs(folder_name, exist_ok=True)
+
+    music_play_list = cloudmusic.getPlaylist(playlist_id)
+
+    for i in range(len(music_play_list)):
+        new = "http://music.163.com/song/media/outer/url?id="
+        music_url = new + str(music_play_list[i].id)
+        music_name = music_play_list[i].name
+        music = requests.get(music_url).content
+        with open(f"{folder_name}//" + music_name + ".mp3", mode="wb") as f:
+            f.write(music)
+            print(str(i+1) + music_name + "-----下载完成")
+            time.sleep(2)
+    print(Fore.GREEN + f"{folder_name}全部下载完成")
+
 
 if __name__ == '__main__':
     while True:
@@ -227,6 +255,8 @@ if __name__ == '__main__':
             music163_download()
         if user == '4':
             music_163_batchsize()
+        if user == '5':
+            music_163_playlist()
         if user == 'o':
             break
 
